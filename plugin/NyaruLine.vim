@@ -246,12 +246,7 @@ endfunction
 " Variables
 "--------------------------------------------------------------------------------
 
-" ステータスライン書式
-let g:nyaruline_mode_exprs = {}
-
-" ハイライト
-let g:nyaruline_mode_highlights = {}
-
+" statuslineのデータ, それを操作する関数の2つを持つ
 " type - mode - atom 構造
 " typeのmode名defaultを標準
 let g:nyaruline_expr_controler = {}
@@ -296,12 +291,15 @@ function! s:template_mode_dict.add_atom(index, expr, hi_name, hi_expr, side) "
 endfunction
 
 " atom_listからそのままstatusline_exprを生成する
-" highlightも読み込む FIXME
+" highlightも読み込む
 function! s:template_mode_dict.make_statusline_expr(atom_list) "
     let statusline_expr = ''
     for atom in a:atom_list
         let atom.is_load = 1
-        execute 'hi' atom.highlight_name atom.highlight_expr
+
+        if atom.highlight_expr != ''
+            execute 'hi' atom.highlight_name atom.highlight_expr
+        endif
 
         let statusline_expr .= '%#' . atom['highlight_name'] . '#' . atom['expr']
     endfor
@@ -311,51 +309,13 @@ endfunction
 
 " atomlistから左右に分けてstatusline exprを生成
 function! s:template_mode_dict.get_statusline_expr() "
-    if 0 != self.is_load
+    if 0 == self.is_load
         let self.is_load = 1
         let self.statusline_expr = self.make_statusline_expr(filter(copy(self.atom_list), 'v:val.side ==? "left"')) . '%=' . self.make_statusline_expr(filter(copy(self.atom_list), 'v:val.side ==? "right"'))
     endif
 
     return self.statusline_expr
 endfunction
-
-
-function! s:debug()
-    call g:nyaruline_expr_controler.add_type('default')
-    call g:nyaruline_expr_controler.default.add_mode('n')
-    call g:nyaruline_expr_controler.default.n.add_atom(
-                \ -1,
-                \ ' NORMAL ',
-                \ 'NYARU_MODENAME_N',
-                \ <SID>X2('38b48b', '00552e', 'bold'),
-                \ 'left',
-                \ )
-    call g:nyaruline_expr_controler.default.n.add_atom(
-                \ -1,
-                \ ' %f ',
-                \ 'NYARU_FILENAME_N',
-                \ <SID>X2( 'd9333f', '000b00', 'NONE'),
-                \ 'left',
-                \ )
-    call g:nyaruline_expr_controler.default.n.add_atom(
-                \ -1,
-                \ ' %m%r%h%w%q ',
-                \ 'NYARU_FLAGS_N',
-                \ <SID>X2( 'aacf53', '1f3134', 'NONE'),
-                \ 'left',
-                \ )
-    call g:nyaruline_expr_controler.default.n.add_atom(
-                \ -1,
-                \ '%{&fenc!=""?&fenc:&enc}',
-                \ 'NYARU_ENCODING_N',
-                \ <SID>X2( '82ae46', '000b00', 'NONE'),
-                \ 'right',
-                \ )
-
-    echo g:nyaruline_expr_controler.default.n.get_statusline_expr()
-    echo g:nyaruline_expr_controler
-endfunction
-call s:debug()
 
 
 
@@ -365,66 +325,39 @@ call s:debug()
 
 " Pluginの変数初期化を行う
 function! g:nyaruline_init()
-    " 各モードラインの標準設定
-    let g:nyaruline_mode_exprs.not_current = '%(%#NYARU_DISABLE#%n - %f%)'
-    let g:nyaruline_mode_exprs.n = '%#NYARU_MODENAME_n# NORMAL %#NYARU_FILENAME# %f %#NYARU_FLAGS# %m%r%h%w%q %= %< %#NYARU_ENCODING#%{&fenc!=""?&fenc:&enc} %#NYARU_FILL#%{&fileformat} %y %03c%%%03l %02n@BN --%p%%-- '
-    let g:nyaruline_mode_exprs.i = '%#NYARU_MODENAME_i# INSERT %#NYARU_FILENAME# %f %#NYARU_FLAGS# %m%r%h%w%q %= %< %{&fenc!=""?&fenc:&enc} %{&fileformat} %y %03c%%%03l %02n@BN --%p%%-- '
+    " JapaneseTraditionalColor
+    call g:nyaruline_expr_controler.add_type('default')
+    call g:nyaruline_expr_controler.default.add_mode('not_current')
+    call g:nyaruline_expr_controler.default.not_current.add_atom( -1, '%n - %f', 'NYARU_NOT_CURRENT', <SID>X2('000033', '727171', 'NONE'), 'left',)
 
-    " ハイライト設定 - JapaneseTraditionalColor
-    let g:nyaruline_mode_highlights.not_current = {}
-    let g:nyaruline_mode_highlights.not_current.is_load = 0
-    let g:nyaruline_mode_highlights.not_current.disable = <SID>X('NYARU_DISABLE', '000033', '727171', 'NONE')
-    let g:nyaruline_mode_highlights.n = {}
-    let g:nyaruline_mode_highlights.n.is_load = 0
-    let g:nyaruline_mode_highlights.n.modename = <SID>X('NYARU_MODENAME_n', '38b48b', '00552e', 'bold')
-    let g:nyaruline_mode_highlights.n.flags =    <SID>X('NYARU_FLAGS', 'd9333f', '000b00', 'NONE')
-    let g:nyaruline_mode_highlights.n.filename = <SID>X('NYARU_FILENAME', 'aacf53', '1f3134', 'NONE')
-    let g:nyaruline_mode_highlights.n.encoding = <SID>X('NYARU_ENCODING', '82ae46', '000b00', 'NONE')
-    let g:nyaruline_mode_highlights.n.fill =     <SID>X('NYARU_FILL', '00a3af', '000b00', 'NONE')
-    let g:nyaruline_mode_highlights.i = {}
-    let g:nyaruline_mode_highlights.i.is_load = 0
-    let g:nyaruline_mode_highlights.i.modename = <SID>X('NYARU_MODENAME_i', '2ca9e1', '0f2350', 'bold')
-    let g:nyaruline_mode_highlights.i.flags =    <SID>X('NYARU_FLAGS', 'd9333f', '16160e', 'NONE')
-    let g:nyaruline_mode_highlights.i.filename = <SID>X('NYARU_FILENAME', 'd9333f', '16160e', 'NONE')
-    let g:nyaruline_mode_highlights.i.fill =     <SID>X('NYARU_FILL', '180614', '16160e', 'NONE')
-endfunction
+    call g:nyaruline_expr_controler.default.add_mode('n')
+    call g:nyaruline_expr_controler.default.n.add_atom( -1, ' NORMAL ', 'NYARU_MODENAME_N', <SID>X2('38b48b', '00552e', 'bold'), 'left',)
+    call g:nyaruline_expr_controler.default.n.add_atom( -1, ' %f ', 'NYARU_FILENAME_N', <SID>X2( 'd9333f', '000b00', 'NONE'), 'left',)
+    call g:nyaruline_expr_controler.default.n.add_atom( -1, ' %m%r%h%w%q ', 'NYARU_FLAGS_N', <SID>X2( 'aacf53', '1f3134', 'NONE'), 'left',)
+    call g:nyaruline_expr_controler.default.n.add_atom( -1, '%{&fenc!=""?&fenc:&enc} ', 'NYARU_ENCODING_N', <SID>X2( '82ae46', '000b00', 'NONE'), 'right',)
+    call g:nyaruline_expr_controler.default.n.add_atom( -1, '%{&fileformat} %y %03c%%%03l %02n@BN --%p%%--', 'NYARU_FILL_N', <SID>X2('00a3af', '000b00', 'NONE'), 'right',)
 
-
-" 各モードのハイライトを設定する TODO : 検証用関数作成
-function! g:setHighlightEachMode(highlightList)
-    for e in items(a:highlightList)
-
-        " 読み込みフラグON
-        if e[0] ==? 'is_load'
-            let a:highlightList.is_load = 1
-            continue
-        endif
-
-        execute e[1]
-    endfor
+    call g:nyaruline_expr_controler.default.add_mode('i')
+    call g:nyaruline_expr_controler.default.i.add_atom( -1, ' INSERT ', 'NYARU_MODENAME_I', <SID>X2('2ca9e1', '0f2350', 'bold'), 'left',)
+    call g:nyaruline_expr_controler.default.i.add_atom( -1, ' %f ', 'NYARU_FILENAME_I', <SID>X2('d9333f', '16160e', 'NONE'), 'left',)
+    call g:nyaruline_expr_controler.default.i.add_atom( -1, ' %m%r%h%w%q ', 'NYARU_FLAGS_I', <SID>X2('d9333f', '16160e', 'NONE'), 'left',)
+    call g:nyaruline_expr_controler.default.i.add_atom( -1, '%{&fenc!=""?&fenc:&enc} ', 'NYARU_ENCODING_I', <SID>X2( '82ae46', '000b00', 'NONE'), 'right',)
+    call g:nyaruline_expr_controler.default.i.add_atom( -1, '%{&fileformat} %y %03c%%%03l %02n@BN --%p%%--', 'NYARU_FILL_I', <SID>X2('180614', '16160e', 'NONE'), 'right',)
 endfunction
 
 
 " 現在のモードを判別しステータスラインの状態を操作
 " statuslineに設定される
 function! g:nyaruline_get_stasusline_expr(is_current)
-    " echo 'Detect ! mode = '.mode().' Buffer is '.bufname('%')
-
     " 現在バッファ以外
     if (1 != a:is_current)
-        if 0 == g:nyaruline_mode_highlights.not_current.is_load
-            call g:setHighlightEachMode(g:nyaruline_mode_highlights.not_current)
-        endif
-        return g:nyaruline_mode_exprs.not_current
+        return g:nyaruline_expr_controler['default'].not_current.get_statusline_expr()
     endif
 
     let n_mode = mode()
 
-    if (has_key(g:nyaruline_mode_exprs, n_mode) && has_key(g:nyaruline_mode_exprs, n_mode))
-        if 0 == g:nyaruline_mode_highlights[n_mode].is_load
-            call g:setHighlightEachMode(g:nyaruline_mode_highlights[n_mode])
-        endif
-        return g:nyaruline_mode_exprs[n_mode]
+    if (has_key(g:nyaruline_expr_controler.default, n_mode))
+        return g:nyaruline_expr_controler['default'][n_mode].get_statusline_expr()
     endif
 
     return 'Settings is NONE'
