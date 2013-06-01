@@ -253,11 +253,8 @@ endfunction
 " }}}
 
 
-let s:base_atom_obj = {
-            \ 'is_load' : 0
-            \ 'expr' : ''
-            \ 'highlight' : ''
-            \ }
+
+" Variables {{{
 
 " ステータスライン書式
 let g:nyaruline_mode_exprs = {}
@@ -265,18 +262,72 @@ let g:nyaruline_mode_exprs = {}
 " ハイライト
 let g:nyaruline_mode_highlights = {}
 
+" リストからステータスラインを生成
+let g:nyaruline_atom_list = []
+
+" atomリストとロードチェックを持つ
+let g:nyaruline_mode_dict = {}
+
+" keyが特別扱いするバッファ名で要素はmode_dictのようなものをもつ
+" defaultを標準で それ以外を特殊にする？
+" types - modes - atoms
+let g:nyaruline_expr_controler = {
+            \ 'types' : {},
+            \ }
+" }}}
 
 
-
-" 設定の最小要素を返す
-function! s:get_atom_obj(expr, highlight)
-    let atom = deepcopy(s:base_atom_obj)
-
-    let atom.expr = a:expr
-    let atom.highlight = a:highlight
-
-    return atom
+" modeを持つtypeを追加
+" type名でバッファ名を指定する
+function! g:nyaruline_expr_controler.add_type(name, mode_dict) " {{{
+    let self.types[a:name] = a:mode_dict
 endfunction
+" }}}
+
+
+" atomを追加
+function! g:nyaruline_expr_controler.add_atom(type, mode, index, expr, hi_name, hi_expr, side) "{{{
+    let atom = {}
+    let atom.is_load = 0
+    let atom.expr = a:expr
+    let atom.highlight_name = a:hi_name
+    let atom.highlight_expr = a:hi_expr
+    let atom.side = a:side
+
+    call insert(self[a:type][a:mode], atom, a:index)
+endfunction
+" }}}
+
+
+" atom_listからそのままstatusline_exprを生成する
+" highlightも読み込む FIXME
+function! g:nyaruline_expr_controler.make_statusline_expr(atom_list) "{{{
+    let statusline_expr = ''
+    for atom in a:atom_list
+        let atom.is_load = 1
+        execute 'hi' atom.highlight_name atom.highlight_expr
+
+        let statusline_expr .= '%#' . atom['highlight_name'] . '#' . atom['expr']
+    endfor
+
+    return statusline_expr
+endfunction
+" }}}
+
+
+" atomlistから左右に分けてstatusline exprを生成
+function! g:nyaruline_expr_controler.get_statusline_expr(type, mode) "{{{
+    return self.make_statusline_expr(filter(copy(self[a:type][a:mode]), 'v:val.side ==? "left"')) . '=' . self.make_statusline_expr(filter(copy(self[a:type][a:mode]), 'v:val.side ==? "right"'))
+endfunction
+" }}}
+
+
+" 辞書に追加{{{
+function! s:add_mode_dict(key, mode_configs)
+    " TODO : チェック入れる
+    let g:nyaruline_mode_dict[key] = a:mode_configs
+endfunction
+" }}}
 
 
 " Pluginの変数初期化を行う {{{
