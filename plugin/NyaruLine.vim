@@ -253,32 +253,56 @@ endfunction
 " }}}
 
 
-" Pluginの変数初期化を行う {{{
-function! g:initNyaruLine()
-    set background=dark
+let s:base_atom_obj = {
+            \ 'is_load' : 0
+            \ 'expr' : ''
+            \ 'highlight' : ''
+            \ }
 
-    " 各モードラインの標準設定;w
-    let g:NyaruLine_Mode_Str = {}
-    let g:NyaruLine_Mode_Str.notCurrent = '%(%#NYARU_DISABLE#%n - %f%)'
-    let g:NyaruLine_Mode_Str.n = '%#NYARU_MODENAME# %{expand("NORMAL")} %#NYARU_FILENAME# %f %#NYARU_FLAGS# %m%r%h%w%q %=%< %#NYARU_ENCODING#%{&fenc!=""?&fenc:&enc} %#NYARU_FILL#%{&fileformat} %y %03c%%%03l %02n@BN --%p%%-- '
-    let g:NyaruLine_Mode_Str.i = '%#NYARU_MODENAME# %{expand("INSERT")} %#NYARU_FILENAME# %f %#NYARU_FLAGS# %m%r%h%w%q%= %< %{&fenc!=""?&fenc:&enc} %{&fileformat} %y %03c%%%03l %02n@BN --%p%%-- '
+" ステータスライン書式
+let g:nyaruline_mode_exprs = {}
+
+" ハイライト
+let g:nyaruline_mode_highlights = {}
+
+
+
+
+" 設定の最小要素を返す
+function! s:get_atom_obj(expr, highlight)
+    let atom = deepcopy(s:base_atom_obj)
+
+    let atom.expr = a:expr
+    let atom.highlight = a:highlight
+
+    return atom
+endfunction
+
+
+" Pluginの変数初期化を行う {{{
+function! g:nyaruline_init()
+    " 各モードラインの標準設定
+    let g:nyaruline_mode_exprs.not_current = '%(%#NYARU_DISABLE#%n - %f%)'
+    let g:nyaruline_mode_exprs.n = '%#NYARU_MODENAME_n# NORMAL %#NYARU_FILENAME# %f %#NYARU_FLAGS# %m%r%h%w%q %= %< %#NYARU_ENCODING#%{&fenc!=""?&fenc:&enc} %#NYARU_FILL#%{&fileformat} %y %03c%%%03l %02n@BN --%p%%-- '
+    let g:nyaruline_mode_exprs.i = '%#NYARU_MODENAME_i# INSERT %#NYARU_FILENAME# %f %#NYARU_FLAGS# %m%r%h%w%q %= %< %{&fenc!=""?&fenc:&enc} %{&fileformat} %y %03c%%%03l %02n@BN --%p%%-- '
 
     " ハイライト設定 - JapaneseTraditionalColor
-    let g:NyaruLine_Mode_Highlight = {}
-    let g:NyaruLine_Mode_Highlight.notCurrent = {}
-    let g:NyaruLine_Mode_Highlight.notCurrent.disable = <SID>X('NYARU_DISABLE', '000033', '727171', 'NONE')
-    let g:NyaruLine_Mode_Highlight.n = {}
-    let g:NyaruLine_Mode_Highlight.n.modename = <SID>X('NYARU_MODENAME', '38b48b', '00552e', 'bold')
-    let g:NyaruLine_Mode_Highlight.n.flags =    <SID>X('NYARU_FLAGS', 'd9333f', '000b00', 'NONE')
-    let g:NyaruLine_Mode_Highlight.n.filename = <SID>X('NYARU_FILENAME', 'aacf53', '1f3134', 'NONE')
-    let g:NyaruLine_Mode_Highlight.n.encoding = <SID>X('NYARU_ENCODING', '82ae46', '000b00', 'NONE')
-    let g:NyaruLine_Mode_Highlight.n.fill =     <SID>X('NYARU_FILL', '00a3af', '000b00', 'NONE')
-    let g:NyaruLine_Mode_Highlight.i = {}
-    let g:NyaruLine_Mode_Highlight.i.modename = <SID>X('NYARU_MODENAME', '2ca9e1', '0f2350', 'bold')
-    let g:NyaruLine_Mode_Highlight.i.flags =    <SID>X('NYARU_FLAGS', 'd9333f', '16160e', 'NONE')
-    let g:NyaruLine_Mode_Highlight.i.filename = <SID>X('NYARU_FILENAME', 'd9333f', '16160e', 'NONE')
-    let g:NyaruLine_Mode_Highlight.i.fill =     <SID>X('NYARU_FILL', '180614', '16160e', 'NONE')
-
+    let g:nyaruline_mode_highlights.not_current = {}
+    let g:nyaruline_mode_highlights.not_current.is_load = 0
+    let g:nyaruline_mode_highlights.not_current.disable = <SID>X('NYARU_DISABLE', '000033', '727171', 'NONE')
+    let g:nyaruline_mode_highlights.n = {}
+    let g:nyaruline_mode_highlights.n.is_load = 0
+    let g:nyaruline_mode_highlights.n.modename = <SID>X('NYARU_MODENAME_n', '38b48b', '00552e', 'bold')
+    let g:nyaruline_mode_highlights.n.flags =    <SID>X('NYARU_FLAGS', 'd9333f', '000b00', 'NONE')
+    let g:nyaruline_mode_highlights.n.filename = <SID>X('NYARU_FILENAME', 'aacf53', '1f3134', 'NONE')
+    let g:nyaruline_mode_highlights.n.encoding = <SID>X('NYARU_ENCODING', '82ae46', '000b00', 'NONE')
+    let g:nyaruline_mode_highlights.n.fill =     <SID>X('NYARU_FILL', '00a3af', '000b00', 'NONE')
+    let g:nyaruline_mode_highlights.i = {}
+    let g:nyaruline_mode_highlights.i.is_load = 0
+    let g:nyaruline_mode_highlights.i.modename = <SID>X('NYARU_MODENAME_i', '2ca9e1', '0f2350', 'bold')
+    let g:nyaruline_mode_highlights.i.flags =    <SID>X('NYARU_FLAGS', 'd9333f', '16160e', 'NONE')
+    let g:nyaruline_mode_highlights.i.filename = <SID>X('NYARU_FILENAME', 'd9333f', '16160e', 'NONE')
+    let g:nyaruline_mode_highlights.i.fill =     <SID>X('NYARU_FILL', '180614', '16160e', 'NONE')
 endfunction
 " call g:initNyaruLine() " For Debug
 " }}}
@@ -286,8 +310,15 @@ endfunction
 
 " 各モードのハイライトを設定する TODO : 検証用関数作成 {{{
 function! g:setHighlightEachMode(highlightList)
-    for e in values(a:highlightList)
-        execute e
+    for e in items(a:highlightList)
+
+        " 読み込みフラグON
+        if e[0] ==? 'is_load'
+            let a:highlightList.is_load = 1
+            continue
+        endif
+
+        execute e[1]
     endfor
 endfunction
 " }}}
@@ -295,20 +326,24 @@ endfunction
 
 " 現在のモードを判別しステータスラインの状態を操作 {{{
 " statuslineに設定される
-function! g:getModeStatusLine(isCurrent)
+function! g:nyaruline_get_stasusline_expr(is_current)
     " echo 'Detect ! mode = '.mode().' Buffer is '.bufname('%')
 
     " 現在バッファ以外
-    if (!a:isCurrent)
-        call g:setHighlightEachMode(g:NyaruLine_Mode_Highlight['notCurrent'])
-        return g:NyaruLine_Mode_Str.notCurrent
+    if (1 != a:is_current)
+        if 0 == g:nyaruline_mode_highlights.not_current.is_load
+            call g:setHighlightEachMode(g:nyaruline_mode_highlights.not_current)
+        endif
+        return g:nyaruline_mode_exprs.not_current
     endif
 
-    let nMode = mode()
+    let n_mode = mode()
 
-    if (has_key(g:NyaruLine_Mode_Str, nMode) && has_key(g:NyaruLine_Mode_Highlight, nMode))
-        call g:setHighlightEachMode(g:NyaruLine_Mode_Highlight[nMode])
-        return g:NyaruLine_Mode_Str[nMode]
+    if (has_key(g:nyaruline_mode_exprs, n_mode) && has_key(g:nyaruline_mode_exprs, n_mode))
+        if 0 == g:nyaruline_mode_highlights[n_mode].is_load
+            call g:setHighlightEachMode(g:nyaruline_mode_highlights[n_mode])
+        endif
+        return g:nyaruline_mode_exprs[n_mode]
     endif
 
     return 'Settings is NONE'
@@ -321,13 +356,12 @@ augroup NYARULINE
     autocmd!
 
     " VimFilerにてエラー
-    autocmd VimEnter * nested call g:initNyaruLine()
+    autocmd VimEnter * nested call g:nyaruline_init()
 
-    autocmd BufEnter,WinEnter,CmdWinEnter * call setwinvar(0, '&statusline', '%!g:getModeStatusLine(1)')
-    autocmd BufLeave,WinLeave,CmdWinLeave * call setwinvar(0, '&statusline', '%!g:getModeStatusLine(0)')
+    autocmd BufEnter,WinEnter,CmdWinEnter * call setwinvar(0, '&statusline', '%!g:nyaruline_get_stasusline_expr(1)')
+    autocmd BufLeave,WinLeave,CmdWinLeave * call setwinvar(0, '&statusline', '%!g:nyaruline_get_stasusline_expr(0)')
 augroup END
 " }}}
-
 
 
 " vim: set foldmethod=marker:
