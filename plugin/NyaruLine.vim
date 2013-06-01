@@ -254,7 +254,11 @@ let g:nyaruline_expr_controler = {}
 " 自身に指定した名前のtypeを追加
 function! g:nyaruline_expr_controler.add_type(name) "
     let self[a:name] = deepcopy(s:template_type_dict)
+
+    " 参照を返す
+    return self[a:name]
 endfunction
+
 
 " typeのテンプレート
 " modeを持つ
@@ -263,7 +267,20 @@ let s:template_type_dict = {}
 " 自身に指定した名前のmodeを追加
 function! s:template_type_dict.add_mode(name) "
     let self[a:name] = deepcopy(s:template_mode_dict)
+
+    " 参照を返す
+    return self[a:name]
 endfunction
+
+" モードを複製
+function! s:template_type_dict.copy_mode(from, dist)
+    let self[a:dist] = deepcopy(self[a:from])
+
+    let self[a:dist].is_load = 0
+
+    return self[a:dist]
+endfunction
+
 
 " modeのテンプレート
 " 読み込み確認やatomのリストを持つ
@@ -288,6 +305,34 @@ function! s:template_mode_dict.add_atom(index, expr, hi_name, hi_expr, side) "
     else
         call insert(self.atom_list, atom, a:index)
     endif
+
+    " 参照を返す
+    return atom
+endfunction
+
+" 指定したatomを変更
+function! s:template_mode_dict.change_atom(index, expr, hi_name, hi_expr, side)
+    let t_ref = self.atom_list[a:index]
+
+    if a:expr != ''
+        let t_ref.expr = a:expr
+    endif
+
+    if a:hi_name != ''
+        let t_ref.highlight_name = a:hi_name
+    endif
+
+    if a:hi_expr != ''
+        let t_ref.highlight_expr = a:hi_expr
+    endif
+
+    if a:side != ''
+        let t_ref.side = a:side
+    endif
+
+    let self.is_load = 0
+
+    return t_ref
 endfunction
 
 " atom_listからそのままstatusline_exprを生成する
@@ -308,7 +353,7 @@ function! s:template_mode_dict.make_statusline_expr(atom_list) "
 endfunction
 
 " atomlistから左右に分けてstatusline exprを生成
-function! s:template_mode_dict.get_statusline_expr() "
+function! s:template_mode_dict.get_statusline_expr()
     if 0 == self.is_load
         let self.is_load = 1
         let self.statusline_expr = self.make_statusline_expr(filter(copy(self.atom_list), 'v:val.side ==? "left"')) . '%=' . self.make_statusline_expr(filter(copy(self.atom_list), 'v:val.side ==? "right"'))
@@ -323,32 +368,58 @@ endfunction
 " Functions
 "--------------------------------------------------------------------------------
 
+" 現在のモードに従って文字列を返す
+function! g:nyaruline_get_mode_str()
+    let n_mode = mode()
+
+    if n_mode ==# 'n'
+        return 'NORMAL'
+    elseif n_mode ==# 'i'
+        return 'INSERT'
+    elseif n_mode ==# 'R'
+        return 'REPLACE'
+    elseif n_mode ==# 'v'
+        return 'VISUAL'
+    elseif n_mode ==# 'V'
+        return 'V-LINE'
+    elseif n_mode ==# '^V'
+        return 'V-BLOCK'
+    else
+        return n_mode
+    endif
+endfunc
+
+
 " Pluginの変数初期化を行う
-function! g:nyaruline_init()
+function! <SID>nyaruline_init()
     " JapaneseTraditionalColor
     call g:nyaruline_expr_controler.add_type('default')
-    call g:nyaruline_expr_controler.default.add_mode('not_current')
-    call g:nyaruline_expr_controler.default.not_current.add_atom( -1, '%n - %f', 'NYARU_NOT_CURRENT', <SID>X2('000033', '727171', 'NONE'), 'left',)
 
-    call g:nyaruline_expr_controler.default.add_mode('n')
-    call g:nyaruline_expr_controler.default.n.add_atom( -1, ' NORMAL ', 'NYARU_MODENAME_N', <SID>X2('38b48b', '00552e', 'bold'), 'left',)
-    call g:nyaruline_expr_controler.default.n.add_atom( -1, ' %f ', 'NYARU_FILENAME_N', <SID>X2( 'd9333f', '000b00', 'NONE'), 'left',)
-    call g:nyaruline_expr_controler.default.n.add_atom( -1, ' %m%r%h%w%q ', 'NYARU_FLAGS_N', <SID>X2( 'aacf53', '1f3134', 'NONE'), 'left',)
-    call g:nyaruline_expr_controler.default.n.add_atom( -1, '%{&fenc!=""?&fenc:&enc} ', 'NYARU_ENCODING_N', <SID>X2( '82ae46', '000b00', 'NONE'), 'right',)
-    call g:nyaruline_expr_controler.default.n.add_atom( -1, '%{&fileformat} %y %03c%%%03l %02n@BN --%p%%--', 'NYARU_FILL_N', <SID>X2('00a3af', '000b00', 'NONE'), 'right',)
+    let tmp = g:nyaruline_expr_controler.default.add_mode('not_current')
+    call tmp.add_atom(-1, '%n - %f', 'NYARU_NOT_CURRENT', <SID>X2('000033', '727171', 'NONE'), 'left')
 
-    call g:nyaruline_expr_controler.default.add_mode('i')
-    call g:nyaruline_expr_controler.default.i.add_atom( -1, ' INSERT ', 'NYARU_MODENAME_I', <SID>X2('2ca9e1', '0f2350', 'bold'), 'left',)
-    call g:nyaruline_expr_controler.default.i.add_atom( -1, ' %f ', 'NYARU_FILENAME_I', <SID>X2('d9333f', '16160e', 'NONE'), 'left',)
-    call g:nyaruline_expr_controler.default.i.add_atom( -1, ' %m%r%h%w%q ', 'NYARU_FLAGS_I', <SID>X2('d9333f', '16160e', 'NONE'), 'left',)
-    call g:nyaruline_expr_controler.default.i.add_atom( -1, '%{&fenc!=""?&fenc:&enc} ', 'NYARU_ENCODING_I', <SID>X2( '82ae46', '000b00', 'NONE'), 'right',)
-    call g:nyaruline_expr_controler.default.i.add_atom( -1, '%{&fileformat} %y %03c%%%03l %02n@BN --%p%%--', 'NYARU_FILL_I', <SID>X2('180614', '16160e', 'NONE'), 'right',)
+    let tmp = g:nyaruline_expr_controler.default.add_mode('n')
+    call tmp.add_atom(-1, ' %{g:nyaruline_get_mode_str()} ', 'NYARU_MODENAME_N', <SID>X2('38b48b', '00552e', 'bold'), 'left',)
+    call tmp.add_atom(-1, ' %f ', 'NYARU_FILENAME_N', <SID>X2( 'd9333f', '000b00', 'NONE'), 'left',)
+    call tmp.add_atom(-1, ' %m%r%h%w%q ', 'NYARU_FLAGS_N', <SID>X2( 'aacf53', '1f3134', 'NONE'), 'left',)
+    call tmp.add_atom(-1, '%{&fenc!=""?&fenc:&enc} ', 'NYARU_ENCODING_N', <SID>X2( '82ae46', '000b00', 'NONE'), 'right',)
+    call tmp.add_atom(-1, '%{&fileformat} %y %03c%%%03l %02n@BN --%p%%--', 'NYARU_FILL_N', <SID>X2('00a3af', '000b00', 'NONE'), 'right',)
+
+    let tmp = g:nyaruline_expr_controler.default.copy_mode('n', 'i')
+    call tmp.change_atom(0, '', 'NYARU_MODENAME_I', <SID>X2('2ca9e1', '0f2350', 'bold'), '')
+    call tmp.change_atom(1, '', 'NYARU_FILENAME_I', <SID>X2('d9333f', '16160e', 'NONE'), '')
+    call tmp.change_atom(2, '', 'NYARU_FLAGS_I',    <SID>X2('d9333f', '16160e', 'NONE'), '')
+    call tmp.change_atom(3, '', 'NYARU_ENCODING_I', <SID>X2('82ae46', '000b00', 'NONE'), '')
+    call tmp.change_atom(4, '', 'NYARU_FILL_I',     <SID>X2('180614', '16160e', 'NONE'), '')
+
+    " echo g:nyaruline_expr_controler.default.n
+    " echo g:nyaruline_expr_controler.default.i
 endfunction
 
 
 " 現在のモードを判別しステータスラインの状態を操作
 " statuslineに設定される
-function! g:nyaruline_get_stasusline_expr(is_current)
+function! g:nyaruline_statusline_changer(is_current)
     " 現在バッファ以外
     if (1 != a:is_current)
         return g:nyaruline_expr_controler['default'].not_current.get_statusline_expr()
@@ -369,9 +440,8 @@ endfunction
 augroup NYARULINE
     autocmd!
 
-    " VimFilerにてエラー
-    autocmd VimEnter * nested call g:nyaruline_init()
+    autocmd VimEnter * nested call <SID>nyaruline_init()
 
-    autocmd BufEnter,WinEnter,CmdWinEnter * call setwinvar(0, '&statusline', '%!g:nyaruline_get_stasusline_expr(1)')
-    autocmd BufLeave,WinLeave,CmdWinLeave * call setwinvar(0, '&statusline', '%!g:nyaruline_get_stasusline_expr(0)')
+    autocmd BufEnter,WinEnter,CmdWinEnter * call setwinvar(0, '&statusline', '%!g:nyaruline_statusline_changer(1)')
+    autocmd BufLeave,WinLeave,CmdWinLeave * call setwinvar(0, '&statusline', '%!g:nyaruline_statusline_changer(0)')
 augroup END
