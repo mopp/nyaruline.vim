@@ -1,14 +1,3 @@
-" モード名 ファイル名       改行タイプ 文字コード ファイルタイプ 現在のパーセンテージ 行位置と列位置
-
-" TODO:毎回定義するのはあれなので、初めてそのモードに入った時にだけハイライトを定義する
-" NYARU_NORMAL_MODENAMEみたいなハイライト名にする
-" それを設定する構造は 辞書型を使用
-" 初回起動フラグ用の辞書を用意しておくと良いとおもわれ
-" 加えて、別の辞書ファイルとして特定のバッファ名に対するハイライトやステータスラインを用意
-
-" キャッシュを使うか使わないか
-
-
 " 存在するなら読み込み済みなのでfinish
 if exists('g:loaded_NyaruLine') || 1 == &compatible
     " finish
@@ -17,9 +6,11 @@ let g:loaded_NyaruLine = 1
 
 
 
-" Setting Color Functions {{{
+"--------------------------------------------------------------------------------
+" Setting Color Functions
+"--------------------------------------------------------------------------------
 
-" returns an approximate grey index for the given grey level {{{
+" returns an approximate grey index for the given grey level
 function! <SID>grey_number(x)
     if &t_Co == 88
         if a:x < 23
@@ -57,10 +48,9 @@ function! <SID>grey_number(x)
         endif
     endif
 endfun
-" }}}
 
 
-" returns the actual grey level represented by the grey index {{{
+" returns the actual grey level represented by the grey index
 function! <SID>grey_level(n)
     if &t_Co == 88
         if a:n == 0
@@ -93,10 +83,8 @@ function! <SID>grey_level(n)
     endif
 endfun
 
-" }}}
 
-
-" returns the palette index for the given grey index {{{
+" returns the palette index for the given grey index
 function! <SID>grey_color(n)
     if &t_Co == 88
         if a:n == 0
@@ -116,10 +104,9 @@ function! <SID>grey_color(n)
         endif
     endif
 endfun
-" }}}
 
 
-" returns an approximate color index for the given color level {{{
+" returns an approximate color index for the given color level
 function! <SID>rgb_number(x)
     if &t_Co == 88
         if a:x < 69
@@ -145,10 +132,9 @@ function! <SID>rgb_number(x)
         endif
     endif
 endfun
-" }}}
 
 
-" returns the actual color level for the given color index {{{
+" returns the actual color level for the given color index
 function! <SID>rgb_level(n)
     if &t_Co == 88
         if a:n == 0
@@ -168,10 +154,9 @@ function! <SID>rgb_level(n)
         endif
     endif
 endfun
-" }}}
 
 
-" returns the palette index for the given R/G/B color indices {{{
+" returns the palette index for the given R/G/B color indices
 function! <SID>rgb_color(x, y, z)
     if &t_Co == 88
         return 16 + (a:x * 16) + (a:y * 4) + a:z
@@ -179,10 +164,9 @@ function! <SID>rgb_color(x, y, z)
         return 16 + (a:x * 36) + (a:y * 6) + a:z
     endif
 endfun
-" }}}
 
 
-" returns the palette index to approximate the given R/G/B color levels {{{
+" returns the palette index to approximate the given R/G/B color levels
 function! <SID>color(r, g, b)
     " get the closest grey
     let l:gx = <SID>grey_number(a:r)
@@ -216,10 +200,9 @@ function! <SID>color(r, g, b)
         return <SID>rgb_color(l:x, l:y, l:z)
     endif
 endfun
-" }}}
 
 
-" returns the palette index to approximate the 'rrggbb' hex string {{{
+" returns the palette index to approximate the 'rrggbb' hex string
 function! <SID>rgb(rgb)
     let l:r = ("0x" . strpart(a:rgb, 0, 2)) + 0
     let l:g = ("0x" . strpart(a:rgb, 2, 2)) + 0
@@ -227,10 +210,9 @@ function! <SID>rgb(rgb)
 
     return <SID>color(l:r, l:g, l:b)
 endfun
-" }}}
 
 
-" sets the highlighting for the given group {{{
+" sets the highlighting for the given group
 function! <SID>X(group, fg, bg, attr)
     " if a:fg != ''
     " return 'hi ' . a:group . ' guifg=#' . a:fg . ' ctermfg=' . <SID>rgb(a:fg)
@@ -248,13 +230,21 @@ function! <SID>X(group, fg, bg, attr)
         echoerr 'Highlight param is missing'
     endif
 endfunction
-" }}}
-
-" }}}
 
 
+function! <SID>X2(fg, bg, attr)
+    if a:fg != '' && a:bg != '' && a:attr != ''
+        return 'gui=' . a:attr . ' cterm=' . a:attr . ' guifg=#' . a:fg . ' ctermfg=' . <SID>rgb(a:fg) . ' guibg=#' . a:bg . ' ctermbg=' . <SID>rgb(a:bg)
+    elseif
+        echoerr 'Highlight param is missing'
+    endif
+endfunction
 
-" Variables {{{
+
+
+"--------------------------------------------------------------------------------
+" Variables
+"--------------------------------------------------------------------------------
 
 " ステータスライン書式
 let g:nyaruline_mode_exprs = {}
@@ -262,31 +252,34 @@ let g:nyaruline_mode_exprs = {}
 " ハイライト
 let g:nyaruline_mode_highlights = {}
 
-" リストからステータスラインを生成
-let g:nyaruline_atom_list = []
+" type - mode - atom 構造
+" typeのmode名defaultを標準
+let g:nyaruline_expr_controler = {}
 
-" atomリストとロードチェックを持つ
-let g:nyaruline_mode_dict = {}
-
-" keyが特別扱いするバッファ名で要素はmode_dictのようなものをもつ
-" defaultを標準で それ以外を特殊にする？
-" types - modes - atoms
-let g:nyaruline_expr_controler = {
-            \ 'types' : {},
-            \ }
-" }}}
-
-
-" modeを持つtypeを追加
-" type名でバッファ名を指定する
-function! g:nyaruline_expr_controler.add_type(name, mode_dict) " {{{
-    let self.types[a:name] = a:mode_dict
+" 自身に指定した名前のtypeを追加
+function! g:nyaruline_expr_controler.add_type(name) "
+    let self[a:name] = deepcopy(s:template_type_dict)
 endfunction
-" }}}
 
+" typeのテンプレート
+" modeを持つ
+let s:template_type_dict = {}
 
-" atomを追加
-function! g:nyaruline_expr_controler.add_atom(type, mode, index, expr, hi_name, hi_expr, side) "{{{
+" 自身に指定した名前のmodeを追加
+function! s:template_type_dict.add_mode(name) "
+    let self[a:name] = deepcopy(s:template_mode_dict)
+endfunction
+
+" modeのテンプレート
+" 読み込み確認やatomのリストを持つ
+let s:template_mode_dict = {
+            \ 'is_load' : 0,
+            \ 'statusline_expr' : '',
+            \ 'atom_list' : [],
+            \ }
+
+" 自身に指定した設定のatomを追加
+function! s:template_mode_dict.add_atom(index, expr, hi_name, hi_expr, side) "
     let atom = {}
     let atom.is_load = 0
     let atom.expr = a:expr
@@ -294,14 +287,17 @@ function! g:nyaruline_expr_controler.add_atom(type, mode, index, expr, hi_name, 
     let atom.highlight_expr = a:hi_expr
     let atom.side = a:side
 
-    call insert(self[a:type][a:mode], atom, a:index)
+    " 非正なら末尾に追加
+    if a:index < 0
+        call add(self.atom_list, atom)
+    else
+        call insert(self.atom_list, atom, a:index)
+    endif
 endfunction
-" }}}
-
 
 " atom_listからそのままstatusline_exprを生成する
 " highlightも読み込む FIXME
-function! g:nyaruline_expr_controler.make_statusline_expr(atom_list) "{{{
+function! s:template_mode_dict.make_statusline_expr(atom_list) "
     let statusline_expr = ''
     for atom in a:atom_list
         let atom.is_load = 1
@@ -312,25 +308,62 @@ function! g:nyaruline_expr_controler.make_statusline_expr(atom_list) "{{{
 
     return statusline_expr
 endfunction
-" }}}
-
 
 " atomlistから左右に分けてstatusline exprを生成
-function! g:nyaruline_expr_controler.get_statusline_expr(type, mode) "{{{
-    return self.make_statusline_expr(filter(copy(self[a:type][a:mode]), 'v:val.side ==? "left"')) . '=' . self.make_statusline_expr(filter(copy(self[a:type][a:mode]), 'v:val.side ==? "right"'))
+function! s:template_mode_dict.get_statusline_expr() "
+    if 0 != self.is_load
+        let self.is_load = 1
+        let self.statusline_expr = self.make_statusline_expr(filter(copy(self.atom_list), 'v:val.side ==? "left"')) . '%=' . self.make_statusline_expr(filter(copy(self.atom_list), 'v:val.side ==? "right"'))
+    endif
+
+    return self.statusline_expr
 endfunction
-" }}}
 
 
-" 辞書に追加{{{
-function! s:add_mode_dict(key, mode_configs)
-    " TODO : チェック入れる
-    let g:nyaruline_mode_dict[key] = a:mode_configs
+function! s:debug()
+    call g:nyaruline_expr_controler.add_type('default')
+    call g:nyaruline_expr_controler.default.add_mode('n')
+    call g:nyaruline_expr_controler.default.n.add_atom(
+                \ -1,
+                \ ' NORMAL ',
+                \ 'NYARU_MODENAME_N',
+                \ <SID>X2('38b48b', '00552e', 'bold'),
+                \ 'left',
+                \ )
+    call g:nyaruline_expr_controler.default.n.add_atom(
+                \ -1,
+                \ ' %f ',
+                \ 'NYARU_FILENAME_N',
+                \ <SID>X2( 'd9333f', '000b00', 'NONE'),
+                \ 'left',
+                \ )
+    call g:nyaruline_expr_controler.default.n.add_atom(
+                \ -1,
+                \ ' %m%r%h%w%q ',
+                \ 'NYARU_FLAGS_N',
+                \ <SID>X2( 'aacf53', '1f3134', 'NONE'),
+                \ 'left',
+                \ )
+    call g:nyaruline_expr_controler.default.n.add_atom(
+                \ -1,
+                \ '%{&fenc!=""?&fenc:&enc}',
+                \ 'NYARU_ENCODING_N',
+                \ <SID>X2( '82ae46', '000b00', 'NONE'),
+                \ 'right',
+                \ )
+
+    echo g:nyaruline_expr_controler.default.n.get_statusline_expr()
+    echo g:nyaruline_expr_controler
 endfunction
-" }}}
+call s:debug()
 
 
-" Pluginの変数初期化を行う {{{
+
+"--------------------------------------------------------------------------------
+" Functions
+"--------------------------------------------------------------------------------
+
+" Pluginの変数初期化を行う
 function! g:nyaruline_init()
     " 各モードラインの標準設定
     let g:nyaruline_mode_exprs.not_current = '%(%#NYARU_DISABLE#%n - %f%)'
@@ -356,10 +389,9 @@ function! g:nyaruline_init()
     let g:nyaruline_mode_highlights.i.fill =     <SID>X('NYARU_FILL', '180614', '16160e', 'NONE')
 endfunction
 " call g:initNyaruLine() " For Debug
-" }}}
 
 
-" 各モードのハイライトを設定する TODO : 検証用関数作成 {{{
+" 各モードのハイライトを設定する TODO : 検証用関数作成
 function! g:setHighlightEachMode(highlightList)
     for e in items(a:highlightList)
 
@@ -372,10 +404,9 @@ function! g:setHighlightEachMode(highlightList)
         execute e[1]
     endfor
 endfunction
-" }}}
 
 
-" 現在のモードを判別しステータスラインの状態を操作 {{{
+" 現在のモードを判別しステータスラインの状態を操作
 " statuslineに設定される
 function! g:nyaruline_get_stasusline_expr(is_current)
     " echo 'Detect ! mode = '.mode().' Buffer is '.bufname('%')
@@ -399,10 +430,10 @@ function! g:nyaruline_get_stasusline_expr(is_current)
 
     return 'Settings is NONE'
 endfunction
-" }}}
 
 
-" トリガ設定 augroup {{{
+
+" トリガ設定 augroup
 augroup NYARULINE
     autocmd!
 
@@ -412,7 +443,4 @@ augroup NYARULINE
     autocmd BufEnter,WinEnter,CmdWinEnter * call setwinvar(0, '&statusline', '%!g:nyaruline_get_stasusline_expr(1)')
     autocmd BufLeave,WinLeave,CmdWinLeave * call setwinvar(0, '&statusline', '%!g:nyaruline_get_stasusline_expr(0)')
 augroup END
-" }}}
 
-
-" vim: set foldmethod=marker:
