@@ -1,6 +1,6 @@
 " 存在するなら読み込み済みなのでfinish
-if exists('g:loaded_NyaruLine') || 1 == &compatible
-    " finish
+if exists('g:loaded_NyaruLine')
+    finish
 endif
 let g:loaded_NyaruLine = 1
 
@@ -451,10 +451,20 @@ endfunction
 function! g:nyaruline_statusline_changer(is_current)
     " 現在バッファ以外
     if (1 != a:is_current)
+        if (!has_key(g:nyaruline_expr_controler, 'default'))
+            echomsg string(g:nyaruline_expr_controler)
+            return 'error 1'
+        endif
         return g:nyaruline_expr_controler['default'].not_current.get_statusline_expr()
     endif
 
     let n_mode = mode()
+    " echomsg n_mode
+
+    if (!has_key(g:nyaruline_expr_controler, 'default'))
+        echomsg string(g:nyaruline_expr_controler)
+        return 'error 2'
+    endif
 
     if (has_key(g:nyaruline_expr_controler.default, n_mode))
         return g:nyaruline_expr_controler['default'][n_mode].get_statusline_expr()
