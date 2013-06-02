@@ -259,6 +259,9 @@ function! g:nyaruline_expr_controler.add_type(name) "
     return self[a:name]
 endfunction
 
+function! g:nyaruline_expr_controler.get_highlight_param(fg, bg, attr)
+    return <SID>X2(a:fg, a:bg, a:attr)
+endfunction
 
 " typeのテンプレート
 " modeを持つ
@@ -441,6 +444,9 @@ function! <SID>nyaruline_init()
     let tmp = g:nyaruline_expr_controler.default.copy_mode('n', '')
     let tmp = g:nyaruline_expr_controler.default.copy_mode('n', 'R')
 
+    if exists('*g:nyaruline_after_init_hook')
+        call g:nyaruline_after_init_hook(g:nyaruline_expr_controler)
+    endif
     " echo g:nyaruline_expr_controler.default.n.get_statusline_expr()
     " echo g:nyaruline_expr_controler.default.i
 endfunction
@@ -480,6 +486,7 @@ augroup NYARULINE
     autocmd!
 
     autocmd VimEnter * nested call <SID>nyaruline_init()
+    " autocmd VimEnter * redrawstatus!
 
     autocmd BufEnter,WinEnter,CmdWinEnter * call setwinvar(0, '&statusline', '%!g:nyaruline_statusline_changer(1)')
     autocmd BufLeave,WinLeave,CmdWinLeave * call setwinvar(0, '&statusline', '%!g:nyaruline_statusline_changer(0)')
