@@ -407,7 +407,7 @@ function! <SID>nyaruline_init()
     call tmp.add_atom(-1, ' %{g:nyaruline_get_mode_str()} ', 'NYARU_MODENAME_N',    <SID>X2('38f4db', '00552e', 'bold'), 'left')
     call tmp.add_atom(-1, ' BUF %01n ',                      'NYARU_BUFNUM_N',      <SID>X2('164a84', '839b5c', 'NONE'), 'left')
     call tmp.add_atom(-1, ' %f ',                            'NYARU_FILENAME_N',    <SID>X2('19448e', bc,       'bold'), 'left')
-    call tmp.add_atom(-1, ' %m%r%h%w%q ',                    'NYARU_FLAGS_N',       <SID>X2('aacf53', bc,       'NONE'), 'left')
+    call tmp.add_atom(-1, ' %m%r%h%w%q ',                    'NYARU_FLAGS_N',       <SID>X2('19448e', bc,       'NONE'), 'left')
     call tmp.add_atom(-1, ' %{&filetype} ',                  'NYARU_FILETYP_N',     <SID>X2(fc,       bc,       'bold'), 'right')
     call tmp.add_atom(-1, '|',                               'NYARU_SPLIT_N',       <SID>X2('ee827c', bc,       'bold'), 'right')
     call tmp.add_atom(-1, ' %{&fileformat} ',                'NYARU_FILEFRM_N',     <SID>X2(fc,       bc,       'NONE'), 'right')
@@ -486,7 +486,6 @@ augroup NYARULINE
     autocmd!
 
     autocmd VimEnter * nested call <SID>nyaruline_init()
-    " autocmd VimEnter * redrawstatus!
 
     autocmd BufEnter,WinEnter,CmdWinEnter * call setwinvar(0, '&statusline', '%!g:nyaruline_statusline_changer(1)')
     autocmd BufLeave,WinLeave,CmdWinLeave * call setwinvar(0, '&statusline', '%!g:nyaruline_statusline_changer(0)')
