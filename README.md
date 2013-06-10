@@ -15,3 +15,8 @@ Write below in your vimrc.
     endfunction
 
 g:nyaruline_after_init_hook is called when load default nyaruline settings
+
+Sample Image
+=========
+![SS](./ss1.png)
+![SS](./ss2.png)
